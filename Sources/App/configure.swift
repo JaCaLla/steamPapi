@@ -9,7 +9,25 @@ private struct MissingDatabaseCredentials: Error {}
 public func configure(_ app: Application) async throws {
     // uncomment to serve files from /Public folder
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    try await configureDatabase(app)
+    configuireJSONEncoder()
+}
 
+public func configuireJSONEncoder() {
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    decoder.dateDecodingStrategy = .iso8601
+    
+    let encoder = JSONEncoder()
+    encoder.keyEncodingStrategy = .convertToSnakeCase
+    encoder.dateEncodingStrategy = .iso8601
+    encoder.outputFormatting = .prettyPrinted
+    
+    ContentConfiguration.global.use(decoder: decoder, for: .json)
+    ContentConfiguration.global.use(encoder: encoder, for: .json)
+}
+
+public func configureDatabase(_ app: Application) async throws {
     guard
         let dbUser = Environment.get("DATABASE_USERNAME"),
         let dbPass = Environment.get("DATABASE_PASSWORD"),

@@ -2,13 +2,14 @@ import Fluent
 import Vapor
 
 func routes(_ app: Application) throws {
-    app.get { req async in
-        "It works!"
-    }
-
-    app.get("hello") { req async -> String in
-        "Hello, world!"
-    }
+    try app.register(collection: GroceriesController())
+//    app.get { req async in
+//        "It works!"
+//    }
+//
+//    app.get("hello") { req async -> String in
+//        "Hello, world!"
+//    }
     
     app.get("test") { req async throws in
         let product = Product(name: "Oil", barcode: "123")
