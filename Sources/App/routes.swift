@@ -5,6 +5,10 @@ func routes(_ app: Application) throws {
     try app.register(collection: MainController())
     try app.register(collection: GroceriesController())
 
+    app.get("hello") { req async -> String in
+        "Hello, world!"
+    }
+    
     app.get("test") { req async throws in
         let product = Product(name: "Oil", barcode: "123")
         try await product.create(on: req.db)

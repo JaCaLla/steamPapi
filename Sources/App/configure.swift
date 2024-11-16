@@ -11,6 +11,22 @@ public func configure(_ app: Application) async throws {
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     try await configureDatabase(app)
     configuireJSONEncoder()
+    configureLogs()
+}
+
+public func configureLogs() {
+    // 1.
+    var logger = Logger(label: "vapor-logger")
+    logger.logLevel = .trace
+
+    // 2.
+    let logLevel = Environment.get("LOG_LEVEL")
+    
+    // 3.
+    if let logLevel, let logLevel = Logger.Level(rawValue: logLevel) {
+        // 4.
+        logger.logLevel = logLevel
+    }
 }
 
 public func configuireJSONEncoder() {
