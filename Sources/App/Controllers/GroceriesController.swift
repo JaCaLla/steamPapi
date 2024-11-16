@@ -18,7 +18,7 @@ struct GroceriesController: RouteCollection {
     func createGrocery(req: Request) async throws -> Grocery {
         
         let payload = try req.content.decode(CreateGroceryPayload.self)
-        let grocery = Grocery(name: payload.name, latitude: payload.latitude, longitude: payload.latitude)
+        let grocery = Grocery(name: payload.name, latitude: payload.latitude, longitude: payload.longitude)
         try await grocery.save(on: req.db)
         return grocery
     }
