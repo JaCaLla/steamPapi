@@ -10,15 +10,26 @@ import Fluent
 
 struct GroceriesController: RouteCollection {
     func boot(routes: any Vapor.RoutesBuilder) throws {
-        let groceries = routes.grouped("groceries")
+        let groceries = routes.grouped(PathComponent(stringLiteral: Grocery.schema))
         groceries.post(use: createGrocery)
     }
     
     @Sendable
     func createGrocery(req: Request) async throws -> Grocery {
-        
+
         let payload = try req.content.decode(CreateGroceryPayload.self)
-        let grocery = Grocery(name: payload.name, latitude: payload.latitude, longitude: payload.longitude)
+        
+        let existingGrocery = try await Grocery.query(on:req.db)
+            .filter(\.$latitude, .custom("="), payload.latitude)
+            .filter(\.$longitude, .custom("="), payload.longitude)
+            .first()
+
+        let grocery: Grocery
+        if let existingGrocery {
+            grocery = existingGrocery
+        } else {
+            grocery = Grocery(name: payload.name, latitude: payload.latitude, longitude: payload.longitude)
+        }
         try await grocery.save(on: req.db)
         return grocery
     }
