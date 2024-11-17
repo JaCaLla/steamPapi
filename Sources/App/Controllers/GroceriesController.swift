@@ -50,10 +50,11 @@ struct CreateGroceryPayload: Content {
         guard latitude.isFinite else {
             throw Abort(.badRequest, reason: "Latitude must be a finite number")
         }
+        self.latitude = latitude.truncate4Decimals()
         
         guard longitude.isFinite else {
             throw Abort(.badRequest, reason: "Longitude must be a finite number")
         }
-        
+        self.longitude = longitude.truncate4Decimals()
     }
 }
