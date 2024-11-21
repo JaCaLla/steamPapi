@@ -9,7 +9,7 @@ import Foundation
 
 extension Double {
     func truncate4Decimals() -> Double {
-       let factor = pow(10.0, Double(4))
-       return Double(Int(self * factor)) / factor
+        let doubleStr = String(format: "%.5f", self)
+        return Double(doubleStr.prefix(doubleStr.count - 1)) ?? 0.0
    }
 }

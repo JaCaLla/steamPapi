@@ -4,7 +4,8 @@ import Vapor
 func routes(_ app: Application) throws {
     try app.register(collection: MainController())
     try app.register(collection: GroceriesController())
-    try app.register(collection: ProductController())
+    try app.register(collection: ProductsController())
+    try app.register(collection: PriceController())
 
     app.get("hello") { req async -> String in
         "Hello, world!"

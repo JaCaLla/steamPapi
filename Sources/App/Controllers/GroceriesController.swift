@@ -19,19 +19,34 @@ struct GroceriesController: RouteCollection {
 
         let payload = try req.content.decode(CreateGroceryPayload.self)
         
-        let existingGrocery = try await Grocery.query(on:req.db)
-            .filter(\.$latitude, .custom("="), payload.latitude)
-            .filter(\.$longitude, .custom("="), payload.longitude)
+        let paylodadGrocery = Grocery(name: payload.name, latitude: payload.latitude, longitude: payload.longitude)
+        
+        return try await GroceriesController.createOrUpdate(db: req.db, grocery: paylodadGrocery)
+    }
+    
+    @discardableResult
+    static func createOrUpdate(db: Database, grocery from: Grocery) async throws -> Grocery {
+        let existingGrocery = try await Grocery.query(on:db)
+            .filter(\.$latitude, .custom("="), from.latitude)
+            .filter(\.$longitude, .custom("="), from.longitude)
             .first()
 
         let grocery: Grocery
         if let existingGrocery {
             grocery = existingGrocery
+            grocery.name = from.name
         } else {
-            grocery = Grocery(name: payload.name, latitude: payload.latitude, longitude: payload.longitude)
+            grocery = from
         }
-        try await grocery.save(on: req.db)
+        try await grocery.save(on: db)
         return grocery
+    }
+    
+    static func fetchGroceryWithParentRelationships(db: Database, grocery: Grocery) async throws  -> Grocery? {
+        try await Grocery.query(on: db)
+            .filter(\.$id, .custom("="), try grocery.requireID() )
+            .with(\.$prices)
+            .first()
     }
 }
 
@@ -56,5 +71,13 @@ struct CreateGroceryPayload: Content {
             throw Abort(.badRequest, reason: "Longitude must be a finite number")
         }
         self.longitude = longitude.truncate4Decimals()
+    }
+}
+
+extension CreateGroceryPayload {
+    init(_ from: Grocery) {
+        self.name = from.name
+        self.latitude = from.latitude
+        self.longitude = from.longitude
     }
 }

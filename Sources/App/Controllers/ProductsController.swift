@@ -8,7 +8,7 @@
 import Vapor
 import Fluent
 
-struct ProductController: RouteCollection {
+struct ProductsController: RouteCollection {
     func boot(routes: any Vapor.RoutesBuilder) throws {
         let products = routes.grouped(PathComponent(stringLiteral: Product.schema))
         products.post(use: createProduct)
@@ -19,18 +19,40 @@ struct ProductController: RouteCollection {
 
         let payload = try req.content.decode(CreateProductPayload.self)
         
-        let existingProduct = try await Product.query(on:req.db)
-            .filter(\.$barcode, .custom("="), payload.barcode)
+        let paylodadProduct = Product(name: payload.name, barcode: payload.barcode)
+        
+        return try await ProductsController.createOrUpdate(db: req.db, product: paylodadProduct)
+    }
+    
+    @discardableResult
+    static func createOrUpdate(db: Database, product from: Product) async throws -> Product {
+        let existingProduct = try await Product.query(on:db)
+            .filter(\.$barcode, .custom("="), from.barcode)
             .first()
 
         let product: Product
         if let existingProduct {
             product = existingProduct
+            product.name = from.name
         } else {
-            product = Product(name: payload.name, barcode: payload.barcode)
+            product = from
         }
-        try await product.save(on: req.db)
+        try await product.save(on: db)
         return product
+    }
+    
+    static func fechProductWithParentRelationships(db: Database, product: Product) async throws  -> Product? {
+        try await Product.query(on: db)
+            .filter(\.$id, .custom("="), try product.requireID() )
+            .with(\.$prices)
+            .first()
+    }
+    
+    static func fechProductWithGroceriesRelationships(db: Database, product: Product) async throws  -> Product? {
+        try await Product.query(on: db)
+            .filter(\.$id, .custom("="), try product.requireID() )
+            .with(\.$prices)
+            .first()
     }
 }
 
@@ -52,5 +74,12 @@ struct CreateProductPayload: Content {
         self.barcode = productBarcode
  
         
+    }
+}
+
+extension CreateProductPayload {
+    init(_ from: Product) {
+        self.name = from.name
+        self.barcode = from.barcode
     }
 }

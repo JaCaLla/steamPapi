@@ -1,0 +1,59 @@
+openapi: 3.0.0
+info:
+  title: Ejemplo API
+  version: 1.0.0
+  description: Este es un ejemplo de API con un endpoint POST.
+paths:
+  /usuarios:
+    post:
+      summary: Crear un nuevo usuario
+      description: Este endpoint permite crear un nuevo usuario.
+      requestBody:
+        description: Datos necesarios para crear un usuario.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                  example: Juan
+                email:
+                  type: string
+                  format: email
+                  example: juan@example.com
+                edad:
+                  type: integer
+                  example: 25
+              required:
+                - nombre
+                - email
+      responses:
+        '201':
+          description: Usuario creado exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  nombre:
+                    type: string
+                    example: Juan
+                  email:
+                    type: string
+                    format: email
+                    example: juan@example.com
+        '400':
+          description: Error en la solicitud.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Faltan datos requeridos.
