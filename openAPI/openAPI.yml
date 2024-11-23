@@ -1,54 +1,114 @@
 openapi: 3.0.0
 info:
-  title: Ejemplo API
-  version: 1.0.0
-  description: Este es un ejemplo de API con un endpoint POST.
+  title: Price API
+  description: API to send product prices in different supermarkets and obtain the processed details.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8080
 paths:
-  /usuarios:
+  /price:
     post:
-      summary: Crear un nuevo usuario
-      description: Este endpoint permite crear un nuevo usuario.
+      summary: Record product prices
+      description: Receives a price list with product and supermarket location, and returns processed prices with unique identifiers.
       requestBody:
-        description: Datos necesarios para crear un usuario.
         required: true
         content:
           application/json:
             schema:
               type: object
               properties:
-                nombre:
-                  type: string
-                  example: Juan
-                email:
-                  type: string
-                  format: email
-                  example: juan@example.com
-                edad:
-                  type: integer
-                  example: 25
-              required:
-                - nombre
-                - email
+                prices:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      grocery:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            example: "MD 1"
+                          latitude:
+                            type: number
+                            format: float
+                            example: 1.11
+                          longitude:
+                            type: number
+                            format: float
+                            example: 4.56
+                        required:
+                          - name
+                          - latitude
+                          - longitude
+                      product:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            example: "Milk"
+                          barcode:
+                            type: string
+                            example: "1234"
+                        required:
+                          - name
+                          - barcode
+                      price:
+                        type: number
+                        format: float
+                        example: 1.21
+                      currency:
+                        type: string
+                        example: "EUR"
+                    required:
+                      - grocery
+                      - product
+                      - price
+                      - currency
       responses:
-        '201':
-          description: Usuario creado exitosamente.
+        '200':
+          description: Processed price list with additional details.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                    example: 1
-                  nombre:
-                    type: string
-                    example: Juan
-                  email:
-                    type: string
-                    format: email
-                    example: juan@example.com
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                      example: "2AA800FE-05AB-49CB-A9DF-AA9FA9C01E21"
+                    price:
+                      type: number
+                      format: float
+                      example: 1.21
+                    currency:
+                      type: string
+                      example: "EUR"
+                    grocery:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          example: "1C491C89-E578-486A-AE89-EA327B053F7B"
+                    product:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          example: "93020E0C-788D-4615-A758-5CAC11F47420"
+                    created_at:
+                      type: string
+                      format: date-time
+                      example: "2024-11-23T17:54:11Z"
+                    updated_at:
+                      type: string
+                      format: date-time
+                      example: "2024-11-23T17:54:11Z"
         '400':
-          description: Error en la solicitud.
+          description: Blank name, barcode or currency.
           content:
             application/json:
               schema:
@@ -56,4 +116,121 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: Faltan datos requeridos.
+                    example: "Invalid request: name, barcode, and currency cannot be empty."
+  /grocery/{latitude},{longitude}:
+    get:
+      summary: Obtains information about a store and the prices of its products according to coordinates.
+      parameters:
+        - name: latitude
+          in: path
+          required: true
+          description: Grocery latitude.
+          schema:
+            type: number
+            format: float
+        - name: longitude
+          in: path
+          required: true
+          description: Grocery longitude.
+          schema:
+            type: number
+            format: float
+      responses:
+        '200':
+          description: Success response with grocery name, location and its product price list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  longitude:
+                    type: number
+                    format: float
+                    description: Grocery longitude.
+                  latitude:
+                    type: number
+                    format: float
+                    description: Grocery latitude.
+                  name:
+                    type: string
+                    description: Grocery name.
+                  products_prices:
+                    type: array
+                    description: Procut prices.
+                    items:
+                      type: object
+                      properties:
+                        barcode:
+                          type: string
+                          description: Product barcode
+                        price:
+                          type: number
+                          format: float
+                          description: Product price
+                        name:
+                          type: string
+                          description: Product name.
+                        currency:
+                          type: string
+                          description: Currency.
+        '404':
+          description: Grocery not found.
+  /product/{productId}:
+    get:
+      summary: Get product information and its produt prices
+      description: Returns information about a product, including its barcode, name and prices in multiple grocery locations.
+      parameters:
+        - name: productId
+          in: path
+          description: Product barcode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response with product data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  barcode:
+                    type: string
+                    description: Barcode
+                  name:
+                    type: string
+                    description: Product name
+                  grocery_prices:
+                    type: array
+                    description: Product price list in different grocery locations
+                    items:
+                      type: object
+                      properties:
+                        longitude:
+                          type: number
+                          format: float
+                          description: Grocery longitude
+                        latitude:
+                          type: number
+                          format: float
+                          description: Grocery latitude
+                        price:
+                          type: number
+                          format: float
+                          description: Product price at this loction
+                        currency:
+                          type: string
+                          description: Currency
+                        name:
+                          type: string
+                          description: Grocery name
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message
