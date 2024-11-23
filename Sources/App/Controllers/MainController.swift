@@ -17,9 +17,9 @@ struct MainController: RouteCollection {
     @Sendable
     func reset(req: Request) async throws -> [Grocery] {
         
+        try await Price.query(on: req.db).delete()
         try await Grocery.query(on: req.db).delete()
         try await Product.query(on: req.db).delete()
-        try await Price.query(on: req.db).delete()
         throw Abort(.ok)
     }
 }
