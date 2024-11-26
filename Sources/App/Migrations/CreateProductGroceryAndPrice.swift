@@ -36,11 +36,19 @@ struct CreateProductGroceryAndPrice: AsyncMigration {
             .timestamps()
             .create()
 
+        try await database.schema(User.schema)
+            .id()
+            .field(User.FieldKeys.v1.email, .string, .required)
+            .field(User.FieldKeys.v1.passwordHash, .string, .required)
+            .unique(on: User.FieldKeys.v1.email)
+            .timestamps()
+            .create()
     }
     
     func revert(on database: any Database) async throws {
         try await database.schema(Price.schema).delete()
         try await database.schema(Product.schema).delete()
         try await database.schema(Grocery.schema).delete()
+        try await database.schema(User.schema).delete()
     }
 }
