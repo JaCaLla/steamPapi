@@ -24,14 +24,25 @@ struct UserBasicAuthenticator: AsyncBasicAuthenticator {
     }
 }
 
+struct UserJWTAuthenticator: AsyncBearerAuthenticator {
+    func authenticate(bearer: Vapor.BearerAuthorization, for request: Vapor.Request) async throws {
+        let payload = try await request.jwt.verify(as: User.Token.self)
+        guard let user = try await User.find(payload.userID, on: request.db) else {
+            return
+        }
+        request.auth.login(user)
+    }
+}
+
 struct UsersController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let users = routes.grouped(PathComponent(stringLiteral: EndPointPath.user.rawValue))
         users.post(use: create)
+        users.post("login", use: login)
         
         let protected = users
             .grouped(UserBasicAuthenticator())
-            //.grouped(UserAuthTokenAuthenticator())
+            .grouped(UserJWTAuthenticator())
             .grouped(User.guardMiddleware())
         protected.get("me", use: show)
     }
@@ -71,5 +82,28 @@ struct UsersController: RouteCollection {
     func show(req: Request) async throws -> User.Response {
         let user = try req.auth.require(User.self)
         return try user.response
+    }
+    
+    func login(req: Request) async throws -> [String: String] {
+        let loginPayload = try req.content.decode(User.LoginPayload.self)
+        guard let user = try await User.query(on: req.db)
+            .filter(\.$email, .custom("ILIKE"), loginPayload.email)
+            .first() else {
+            throw Abort(.unauthorized)
+        }
+          
+        guard try Bcrypt.verify(loginPayload.password, created: user.passwordHash) else {
+            throw Abort(.unauthorized)
+        }
+        
+        let jwt = User.Token(subject: .init(stringLiteral: user.email),
+                             expiration: .init(value: Date.now.addingTimeInterval(50)),
+                             issuer: .init(stringLiteral: User.Token.issuer),
+                             issuedAt: .init(value: .now),
+                             userID: try user.requireID()
+        )
+        let encodedJWT = try await req.jwt.sign(jwt)
+        
+        return ["token": encodedJWT]
     }
 }
