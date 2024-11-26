@@ -47,7 +47,7 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable /* Not po
 }
 
 extension User {
-    struct CreatePayload: Codable, Validatable {
+    struct CreatePayload: Content, Validatable {
         var email: String
         var password: String
         var passwordConfirmation: String

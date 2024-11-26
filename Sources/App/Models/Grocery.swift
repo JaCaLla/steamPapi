@@ -64,3 +64,37 @@ final class Grocery: Model, Content, @unchecked Sendable {
 //        )
 //    }
 }
+
+extension Grocery {
+    struct CreateGroceryPayload: Content {
+        var name: String
+        var latitude: Double
+        var longitude: Double
+
+        mutating func afterDecode() throws {
+            let groceryName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !groceryName.isEmpty else {
+                throw Abort(.badRequest, reason: "Grocery name cannot be empty")
+            }
+            self.name = groceryName
+
+            guard latitude.isFinite else {
+                throw Abort(.badRequest, reason: "Latitude must be a finite number")
+            }
+            self.latitude = latitude.truncate4Decimals()
+
+            guard longitude.isFinite else {
+                throw Abort(.badRequest, reason: "Longitude must be a finite number")
+            }
+            self.longitude = longitude.truncate4Decimals()
+        }
+    }
+}
+
+extension Grocery.CreateGroceryPayload {
+    init(_ from: Grocery) {
+        self.name = from.name
+        self.latitude = from.latitude
+        self.longitude = from.longitude
+    }
+}

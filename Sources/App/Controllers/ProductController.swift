@@ -57,7 +57,7 @@ struct ProductController: RouteCollection {
     @Sendable
     func createProduct(req: Request) async throws -> Product {
 
-        let payload = try req.content.decode(CreateProductPayload.self)
+        let payload = try req.content.decode(Product.CreateProductPayload.self)
 
         let paylodadProduct = Product(name: payload.name, barcode: payload.barcode)
         
@@ -91,34 +91,7 @@ struct ProductController: RouteCollection {
                 .with(\.$prices)
                 .first()
         }
-
     }
 }
 
-struct CreateProductPayload: Content {
-    var name: String
-    var barcode: String
-    
-    mutating func afterDecode() throws {
-        let productName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !productName.isEmpty else {
-            throw Abort(.badRequest, reason: "Grocery name cannot be empty")
-        }
-        self.name = productName
-        
-        let productBarcode = self.barcode.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !productBarcode.isEmpty else {
-            throw Abort(.badRequest, reason: "Barcode cannot be empty")
-        }
-        self.barcode = productBarcode
- 
-        
-    }
-}
 
-extension CreateProductPayload {
-    init(_ from: Product) {
-        self.name = from.name
-        self.barcode = from.barcode
-    }
-}

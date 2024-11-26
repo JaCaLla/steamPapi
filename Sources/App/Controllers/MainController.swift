@@ -20,6 +20,7 @@ struct MainController: RouteCollection {
         try await Price.query(on: req.db).delete()
         try await Grocery.query(on: req.db).delete()
         try await Product.query(on: req.db).delete()
+        try await User.query(on: req.db).delete()
         throw Abort(.ok)
     }
 }

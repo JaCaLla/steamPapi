@@ -18,7 +18,7 @@ struct PriceController: RouteCollection {
     @Sendable
     func createPrice(req: Request) async throws -> [Price] {
         var prices: [Price] = []
-        let payloads = try req.content.decode(CreatePricesPayload.self)
+        let payloads = try req.content.decode(Price.CreatePricesPayload.self)
         for payload in payloads.prices {
             let price = try await PriceController.createOrUpdatePrice(db: req.db, payload: payload)
             prices.append(price)
@@ -26,7 +26,7 @@ struct PriceController: RouteCollection {
         return prices
     }
     
-    static func createOrUpdatePrices(db: Database, payloads: [CreatePricePayload]) async throws -> [Price] {
+    static func createOrUpdatePrices(db: Database, payloads: [Price.CreatePricePayload]) async throws -> [Price] {
         var prices: [Price] = []
         for payload in payloads {
             let price = try await createOrUpdatePrice(db: db, payload: payload)
@@ -35,7 +35,7 @@ struct PriceController: RouteCollection {
         return prices
     }
     
-    static func createOrUpdatePrice(db: Database, payload: CreatePricePayload) async throws -> Price {
+    static func createOrUpdatePrice(db: Database, payload: Price.CreatePricePayload) async throws -> Price {
         let product = try await ProductController.createOrUpdate(db: db, product: payload.toProduct())
         
         let grocery = try await GroceryController.createOrUpdate(db: db,
@@ -70,55 +70,5 @@ struct PriceController: RouteCollection {
             .with(\.$product) // Eagerly load the Product relation
             .with(\.$grocery) // Eagerly load the Product relation
             .first()
-    }
-}
-
-struct CreatePricesPayload: Content {
-    var prices: [CreatePricePayload]
-    
-    mutating func afterDecode() throws {
-        guard prices.allSatisfy( { !$0.currency.isEmpty }) else {
-            throw Abort(.badRequest, reason: "Currency name cannot be empty")
-        }
-    }
-}
-
-struct CreatePricePayload: Content {
-    var grocery: CreateGroceryPayload
-    var product: CreateProductPayload
-    var price: Double
-    var currency: String
-    
-    mutating func afterDecode() throws {
-        
-        guard price.isFinite else {
-            throw Abort(.badRequest, reason: "Price must be a finite number")
-        }
-        
-        let currencyName = currency.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !currencyName.isEmpty else {
-            throw Abort(.badRequest, reason: "Currency name cannot be empty")
-        }
-        self.currency = currencyName        
-    }
-}
-
-extension CreatePricePayload {
-    init(grocery: Grocery, product: Product, price: Double, currency: String) {
-        self.grocery = .init(grocery)
-        self.product = .init(product)
-        self.price = price
-        self.currency = currency
-    }
-
-    func toGrocery() -> Grocery {
-        Grocery(name: self.grocery.name,
-                latitude: self.grocery.latitude,
-                longitude: self.grocery.longitude)
-    }
-    
-    func toProduct() -> Product {
-        Product(name: self.product.name,
-                barcode: self.product.barcode)
     }
 }

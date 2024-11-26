@@ -59,3 +59,31 @@ final class Product: Model, Content, @unchecked Sendable {
 //        )
 //    }
 }
+
+extension Product {
+    struct CreateProductPayload: Content {
+        var name: String
+        var barcode: String
+        
+        mutating func afterDecode() throws {
+            let productName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !productName.isEmpty else {
+                throw Abort(.badRequest, reason: "Grocery name cannot be empty")
+            }
+            self.name = productName
+            
+            let productBarcode = self.barcode.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !productBarcode.isEmpty else {
+                throw Abort(.badRequest, reason: "Barcode cannot be empty")
+            }
+            self.barcode = productBarcode
+        }
+    }
+}
+
+extension Product.CreateProductPayload {
+    init(_ from: Product) {
+        self.name = from.name
+        self.barcode = from.barcode
+    }
+}

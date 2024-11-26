@@ -32,11 +32,11 @@ extension ControllerTests {
                         let groceryAdded = try res.content.decode(Grocery.self)
                         #expect(res.status == .ok)
                         try await app.test(.POST, "price", beforeRequest: { req in
-                            let newPrice = CreatePricePayload(grocery: groceryAdded,
+                            let newPrice = Price.CreatePricePayload(grocery: groceryAdded,
                                                               product: productAdded,
                                                               price: 10.3,
                                                               currency: "EUR")
-                            let newPrices = CreatePricesPayload(prices: [newPrice])
+                            let newPrices = Price.CreatePricesPayload(prices: [newPrice])
                             try req.content.encode(newPrices)
                         }, afterResponse: { res async throws in
                             #expect(res.status == .ok)
@@ -55,11 +55,11 @@ extension ControllerTests {
         func createPricesNoProductNoGrocery() async throws {
             try await ControllerTests.withApp { app in
                 try await app.test(.POST, "price", beforeRequest: { req in
-                    let newPrice = CreatePricePayload(grocery: Grocery(name: "MD", latitude: 1.12345, longitude: 2.123),
+                    let newPrice = Price.CreatePricePayload(grocery: Grocery(name: "MD", latitude: 1.12345, longitude: 2.123),
                                                       product: Product(name:"Milk", barcode: "123456"),
                                                       price: 10.3,
                                                       currency: "EUR")
-                    let newPrices = CreatePricesPayload(prices: [newPrice])
+                    let newPrices = Price.CreatePricesPayload(prices: [newPrice])
                     try req.content.encode(newPrices)
                 }, afterResponse: { res async throws in
                     #expect(res.status == .ok)
@@ -105,11 +105,11 @@ extension ControllerTests {
                                                              grocery: Grocery(name: "MD", latitude: 1.12, longitude: 2.23))
                 
                 try await app.test(.POST, "price", beforeRequest: { req in
-                    let newPrice = CreatePricePayload(grocery: Grocery(name: "MD", latitude: 1.12, longitude: 2.23),
+                    let newPrice = Price.CreatePricePayload(grocery: Grocery(name: "MD", latitude: 1.12, longitude: 2.23),
                                                       product: Product(name:"Apple", barcode: "12345"),
                                                       price: 14.3,
                                                       currency: "")
-                    let newPrices = CreatePricesPayload(prices: [newPrice])
+                    let newPrices = Price.CreatePricesPayload(prices: [newPrice])
                     try req.content.encode(newPrices)
                 }, afterResponse: { res async throws in
                     #expect(res.status == .badRequest)
@@ -128,11 +128,11 @@ extension ControllerTests {
                                                              grocery: Grocery(name: "SP", latitude: 4.52, longitude: 4.53))
                 
                 try await app.test(.POST, "price", beforeRequest: { req in
-                    let newPrice = CreatePricePayload(grocery: Grocery(name: "MD", latitude: 1.12, longitude: 2.23),
+                    let newPrice = Price.CreatePricePayload(grocery: Grocery(name: "MD", latitude: 1.12, longitude: 2.23),
                                                       product: Product(name:"Apple", barcode: "12345"),
                                                       price: 14.3,
                                                       currency: "EUR")
-                    let newPrices = CreatePricesPayload(prices: [newPrice])
+                    let newPrices = Price.CreatePricesPayload(prices: [newPrice])
                     try req.content.encode(newPrices)
                 }, afterResponse: { res async throws in
                     #expect(res.status == .ok)
@@ -143,11 +143,11 @@ extension ControllerTests {
                     #expect(priceAdded1.currency == "EUR")
                     
                     try await app.test(.POST, "price", beforeRequest: { req in
-                        let newPrice = CreatePricePayload(grocery: Grocery(name: "SP", latitude: 4.52, longitude: 4.53),
+                        let newPrice = Price.CreatePricePayload(grocery: Grocery(name: "SP", latitude: 4.52, longitude: 4.53),
                                                           product: Product(name:"Apple", barcode: "12345"),
                                                           price: 6.7,
                                                           currency: "EUR")
-                        let newPrices = CreatePricesPayload(prices: [newPrice])
+                        let newPrices = Price.CreatePricesPayload(prices: [newPrice])
                         try req.content.encode(newPrices)
                     }, afterResponse: { res async throws in
                         #expect(res.status == .ok)
@@ -219,11 +219,11 @@ extension ControllerTests {
                                                            grocery: Grocery(name: "Dtp", latitude: -8.12, longitude: 2.50))
                 
                 try await app.test(.POST, "price", beforeRequest: { req in
-                    let newPrice = CreatePricePayload(grocery: Grocery(name: "Dtp", latitude: -8.12, longitude: 2.50),
+                    let newPrice = Price.CreatePricePayload(grocery: Grocery(name: "Dtp", latitude: -8.12, longitude: 2.50),
                                                       product: Product(name: "Apple",barcode: "12345"),
                                                       price: 64.3,
                                                       currency: "EUR")
-                    let newPrices = CreatePricesPayload(prices: [newPrice])
+                    let newPrices = Price.CreatePricesPayload(prices: [newPrice])
                     try req.content.encode(newPrices)
                 }, afterResponse: { res async throws in
                     #expect(res.status == .ok)
@@ -234,11 +234,11 @@ extension ControllerTests {
                     #expect(priceAdded1.currency == "EUR")
                     
                     try await app.test(.POST, "price", beforeRequest: { req in
-                        let newPrice = CreatePricePayload(grocery: Grocery(name: "Dtp", latitude: -8.12, longitude: 2.50),
+                        let newPrice = Price.CreatePricePayload(grocery: Grocery(name: "Dtp", latitude: -8.12, longitude: 2.50),
                                                           product: Product(name: "Clock",barcode: "6345"),
                                                           price: 7.7,
                                                           currency: "USD")
-                        let newPrices = CreatePricesPayload(prices: [newPrice])
+                        let newPrices = Price.CreatePricesPayload(prices: [newPrice])
                         try req.content.encode(newPrices)
                     }, afterResponse: { res async throws in
                         #expect(res.status == .ok)

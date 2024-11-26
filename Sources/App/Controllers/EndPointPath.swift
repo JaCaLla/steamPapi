@@ -6,5 +6,5 @@
 //
 
 enum EndPointPath: String {
-    case price, product, grocery
+    case price, product, grocery, user
 }

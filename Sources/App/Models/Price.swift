@@ -72,3 +72,55 @@ final class Price: Model, Content, @unchecked Sendable {
 //        )
 //    }
 }
+
+extension Price {
+    struct CreatePricesPayload: Content {
+        var prices: [CreatePricePayload]
+        
+        mutating func afterDecode() throws {
+            guard prices.allSatisfy( { !$0.currency.isEmpty }) else {
+                throw Abort(.badRequest, reason: "Currency name cannot be empty")
+            }
+        }
+    }
+
+    struct CreatePricePayload: Content {
+        var grocery: Grocery.CreateGroceryPayload
+        var product: Product.CreateProductPayload
+        var price: Double
+        var currency: String
+        
+        mutating func afterDecode() throws {
+            
+            guard price.isFinite else {
+                throw Abort(.badRequest, reason: "Price must be a finite number")
+            }
+            
+            let currencyName = currency.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !currencyName.isEmpty else {
+                throw Abort(.badRequest, reason: "Currency name cannot be empty")
+            }
+            self.currency = currencyName
+        }
+    }
+}
+
+extension Price.CreatePricePayload {
+    init(grocery: Grocery, product: Product, price: Double, currency: String) {
+        self.grocery = .init(grocery)
+        self.product = .init(product)
+        self.price = price
+        self.currency = currency
+    }
+
+    func toGrocery() -> Grocery {
+        Grocery(name: self.grocery.name,
+                latitude: self.grocery.latitude,
+                longitude: self.grocery.longitude)
+    }
+    
+    func toProduct() -> Product {
+        Product(name: self.product.name,
+                barcode: self.product.barcode)
+    }
+}
