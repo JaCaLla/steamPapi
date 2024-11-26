@@ -9,7 +9,7 @@ import Fluent
 
 
 
-struct CreateProductGroceryAndPrice: AsyncMigration {
+struct CreateProductGroceryPriceAndUser: AsyncMigration {
     func prepare(on database: any Database) async throws {
         try await database.schema(Product.schema)
             .id()

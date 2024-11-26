@@ -61,7 +61,7 @@ public func configureDatabase(_ app: Application) async throws {
         tls: .prefer(try .init(configuration: .clientDefault)))
     ), as: .psql)
 
-    app.migrations.add(CreateProductGroceryAndPrice())
+    app.migrations.add(CreateProductGroceryPriceAndUser())
     // register routes
     try routes(app)
 }

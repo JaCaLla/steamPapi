@@ -6,6 +6,7 @@ func routes(_ app: Application) throws {
     try app.register(collection: GroceryController())
     try app.register(collection: ProductController())
     try app.register(collection: PriceController())
+    try app.register(collection: UsersController())
 
     app.get("hello") { req async -> String in
         "Hello, world!"
