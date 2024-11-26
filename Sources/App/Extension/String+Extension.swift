@@ -18,4 +18,24 @@ extension String {
         }
         return (latitude.truncate4Decimals(), longitude.truncate4Decimals())
     }
+    
+    func containsJWT() -> Bool {
+
+        let components = self.split(separator: ".")
+        
+        guard components.count == 3 else {
+            return false
+        }
+        
+        let base64Regex = "^[A-Za-z0-9_-]+$"
+        let predicate = NSPredicate(format: "SELF MATCHES %@", base64Regex)
+        
+        for component in components {
+            if !predicate.evaluate(with: component) {
+                return false
+            }
+        }
+        
+        return true
+    }
 }

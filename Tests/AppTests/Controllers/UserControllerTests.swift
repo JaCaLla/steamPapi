@@ -128,5 +128,149 @@ extension ControllerTests {
                 })
             }
         }
+        
+        @Test("Do login and retrieve JWT")
+        func doLoginAndRetrieveJWT() async throws {
+            try await ControllerTests.withApp { app in
+                try await User.query(on: app.db).delete()
+                
+                let email = "javi.calatrava@gmail.com"
+                let password = "patatata"
+                let payload = User.CreatePayload(email: email, password: password, passwordConfirmation: password)
+                _ = try await UsersController.create(payload: payload, db: app.db)
+                try await app.test(.POST,
+                                   "user/login",
+                                   beforeRequest: { req in
+                    let paylodadLogin = User.LoginPayload(email: email, password: password)
+                    try req.content.encode(paylodadLogin)
+                }, afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    let userResponse = try res.content.decode([String: String].self)
+                    #expect(userResponse["token"]?.containsJWT() ?? false)
+                })
+            }
+        }
+        
+        @Test("Do login with wrong password")
+        func doLoginWithWrongPassword() async throws {
+            try await ControllerTests.withApp { app in
+                try await User.query(on: app.db).delete()
+                
+                let email = "javi.calatrava@gmail.com"
+                let password = "patatata"
+                let payload = User.CreatePayload(email: email, password: password, passwordConfirmation: password)
+                _ = try await UsersController.create(payload: payload, db: app.db)
+                try await app.test(.POST,
+                                   "user/login",
+                                   beforeRequest: { req in
+                    let paylodadLogin = User.LoginPayload(email: email, password: "wrongPassword")
+                    try req.content.encode(paylodadLogin)
+                }, afterResponse: { res async throws in
+                    #expect(res.status == .unauthorized)
+                })
+            }
+        }
+        
+        @Test("Access to securized api with JWT")
+        func accessSecurizedAPIWithJWT() async throws {
+            try await ControllerTests.withApp { app in
+                try await User.query(on: app.db).delete()
+                
+                let email = "javi.calatrava@gmail.com"
+                let password = "patatata"
+                let createPayload = User.CreatePayload(email: email, password: password, passwordConfirmation: password)
+                _ = try await UsersController.create(payload: createPayload, db: app.db)
+                
+
+                try await app.test(.POST,
+                                   "user/login",
+                                   beforeRequest: { req in
+                    let paylodadLogin = User.LoginPayload(email: email, password: password)
+                    try req.content.encode(paylodadLogin)
+                }, afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    let userResponse = try res.content.decode([String: String].self)
+                    let tokenJWT = userResponse["token"] ?? ""
+                    try await app.test(.GET,
+                                       "user/me",
+                                       headers:  ["Authorization": "Bearer \(tokenJWT)"],
+                                       beforeRequest: { req in
+                        let payload = User.CreatePayload(email: email, password: password, passwordConfirmation: password)
+                        try req.content.encode(payload)
+                    }, afterResponse: { res async throws in
+                        #expect(res.status == .ok)
+                        let userResponse = try res.content.decode(User.Response.self)
+                        #expect(userResponse.email == "javi.calatrava@gmail.com")
+                    })
+                })
+            }
+        }
+        
+        @Test("Access to securized api with wrong JWT")
+        func accessSecurizedAPIWithWrongJWT() async throws {
+            try await ControllerTests.withApp { app in
+                try await User.query(on: app.db).delete()
+                
+                let email = "javi.calatrava@gmail.com"
+                let password = "patatata"
+                let createPayload = User.CreatePayload(email: email, password: password, passwordConfirmation: password)
+                _ = try await UsersController.create(payload: createPayload, db: app.db)
+                
+
+                try await app.test(.POST,
+                                   "user/login",
+                                   beforeRequest: { req in
+                    let paylodadLogin = User.LoginPayload(email: email, password: password)
+                    try req.content.encode(paylodadLogin)
+                }, afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    let tokenJWT = "WrongJWT"
+                    try await app.test(.GET,
+                                       "user/me",
+                                       headers:  ["Authorization": "Bearer \(tokenJWT)"],
+                                       beforeRequest: { req in
+                        let payload = User.CreatePayload(email: email, password: password, passwordConfirmation: password)
+                        try req.content.encode(payload)
+                    }, afterResponse: { res async throws in
+                        #expect(res.status == .unauthorized)
+                    })
+                })
+            }
+        }
+
+        // Disabled because it takes too long
+        @Test(.disabled("Access to securized api with JWT expired"))
+        func accessSecurizedAPIWithJWTExpired() async throws {
+            try await ControllerTests.withApp { app in
+                try await User.query(on: app.db).delete()
+                
+                let email = "javi.calatrava@gmail.com"
+                let password = "patatata"
+                let createPayload = User.CreatePayload(email: email, password: password, passwordConfirmation: password)
+                _ = try await UsersController.create(payload: createPayload, db: app.db)
+                
+
+                try await app.test(.POST,
+                                   "user/login",
+                                   beforeRequest: { req in
+                    let paylodadLogin = User.LoginPayload(email: email, password: password)
+                    try req.content.encode(paylodadLogin)
+                }, afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    let userResponse = try res.content.decode([String: String].self)
+                    let tokenJWT = userResponse["token"] ?? ""
+                    sleep(51)
+                    try await app.test(.GET,
+                                       "user/me",
+                                       headers:  ["Authorization": "Bearer \(tokenJWT)"],
+                                       beforeRequest: { req in
+                        let payload = User.CreatePayload(email: email, password: password, passwordConfirmation: password)
+                        try req.content.encode(payload)
+                    }, afterResponse: { res async throws in
+                        #expect(res.status == .unauthorized)
+                    })
+                })
+            }
+        }
     }
 }

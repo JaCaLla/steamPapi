@@ -86,23 +86,29 @@ struct UsersController: RouteCollection {
     
     func login(req: Request) async throws -> [String: String] {
         let loginPayload = try req.content.decode(User.LoginPayload.self)
-        guard let user = try await User.query(on: req.db)
-            .filter(\.$email, .custom("ILIKE"), loginPayload.email)
+        return try await login(payload: loginPayload, db: req.db, jwt: req.jwt)
+    }
+    
+
+    
+    func login(payload: User.LoginPayload, db: Database, jwt: Request.JWT) async throws -> [String: String] {
+        guard let user = try await User.query(on: db)
+            .filter(\.$email, .custom("ILIKE"), payload.email)
             .first() else {
             throw Abort(.unauthorized)
         }
           
-        guard try Bcrypt.verify(loginPayload.password, created: user.passwordHash) else {
+        guard try Bcrypt.verify(payload.password, created: user.passwordHash) else {
             throw Abort(.unauthorized)
         }
         
-        let jwt = User.Token(subject: .init(stringLiteral: user.email),
-                             expiration: .init(value: Date.now.addingTimeInterval(50)),
+        let tokenJWT = User.Token(subject: .init(stringLiteral: user.email),
+                                  expiration: .init(value: Date.now.addingTimeInterval(50)),
                              issuer: .init(stringLiteral: User.Token.issuer),
                              issuedAt: .init(value: .now),
                              userID: try user.requireID()
         )
-        let encodedJWT = try await req.jwt.sign(jwt)
+        let encodedJWT = try await jwt.sign(tokenJWT)
         
         return ["token": encodedJWT]
     }
