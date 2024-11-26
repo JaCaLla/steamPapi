@@ -80,5 +80,53 @@ extension ControllerTests {
                 })
             }
         }
+        
+        @Test("Access to securized API")
+        func accessToSecurizedAPI() async throws {
+            try await ControllerTests.withApp { app in
+                try await User.query(on: app.db).delete()
+                let email = "javi.calatrava@gmail.com"
+                let password = "patatata"
+                let payload = User.CreatePayload(email: email, password: password, passwordConfirmation: password)
+                _ = try await UsersController.create(payload: payload, db: app.db)
+                
+                let credentials = "\(email):\(password)"
+                let encodedCredentials = Data(credentials.utf8).base64EncodedString()
+                
+                try await app.test(.GET,
+                                   "user/me",
+                                   headers:  ["Authorization": "Basic \(encodedCredentials)"],
+                                   beforeRequest: { req in
+                    try req.content.encode(payload)
+                }, afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    let userResponse = try res.content.decode(User.Response.self)
+                    #expect(userResponse.email == "javi.calatrava@gmail.com")
+                })
+            }
+        }
+        
+        @Test("Access to securized API with wrong password")
+        func accessToSecurizedAPIWrongPassword() async throws {
+            try await ControllerTests.withApp { app in
+                try await User.query(on: app.db).delete()
+                let email = "javi.calatrava@gmail.com"
+                let password = "patatata"
+                let payload = User.CreatePayload(email: email, password: password, passwordConfirmation: password)
+                _ = try await UsersController.create(payload: payload, db: app.db)
+                
+                let credentials = "\(email):WrongPass"
+                let encodedCredentials = Data(credentials.utf8).base64EncodedString()
+                
+                try await app.test(.GET,
+                                   "user/me",
+                                   headers:  ["Authorization": "Basic \(encodedCredentials)"],
+                                   beforeRequest: { req in
+                    try req.content.encode(payload)
+                }, afterResponse: { res async throws in
+                    #expect(res.status == .unauthorized)
+                })
+            }
+        }
     }
 }

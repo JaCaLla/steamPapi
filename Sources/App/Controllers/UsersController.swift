@@ -8,13 +8,34 @@
 import Vapor
 import Fluent
 
+struct UserBasicAuthenticator: AsyncBasicAuthenticator {
+    func authenticate(basic: Vapor.BasicAuthorization, for request: Vapor.Request) async throws {
+        guard let user = try await User.query(on: request.db)
+            .filter(\.$email, .custom("ILIKE"), basic.username)
+            .first() else {
+            throw Abort(.unauthorized, reason: "Invalid credentials")
+        }
+
+        guard try Bcrypt.verify(basic.password, created: user.passwordHash) else {
+            throw Abort(.unauthorized, reason: "Invalid credentials")
+        }
+
+        request.auth.login(user)
+    }
+}
+
 struct UsersController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let users = routes.grouped(PathComponent(stringLiteral: EndPointPath.user.rawValue))
         users.post(use: create)
+        
+        let protected = users
+            .grouped(UserBasicAuthenticator())
+            //.grouped(UserAuthTokenAuthenticator())
+            .grouped(User.guardMiddleware())
+        protected.get("me", use: show)
     }
 
-    @Sendable
     func create(req: Request) async throws -> User.Response {
         try User.CreatePayload.validate(content: req)
 
@@ -45,5 +66,10 @@ struct UsersController: RouteCollection {
         return  try await User.query(on: db)
             .filter(\.$email, .custom("="), from.email)
             .first()
+    }
+    
+    func show(req: Request) async throws -> User.Response {
+        let user = try req.auth.require(User.self)
+        return try user.response
     }
 }
